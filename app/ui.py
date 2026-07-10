@@ -74,7 +74,7 @@ elif selected_video:
     st.success(f"Loaded existing video: {video_name}")
 
 # ---------------------------------------------------
-# Video player on top
+# Video player
 # ---------------------------------------------------
 if "video_path" in st.session_state:
     st.subheader("Video Player")
@@ -123,79 +123,124 @@ if "video_path" in st.session_state:
         else:
             return f"{m:02d}:{s:02d}"
 
+  # Tools Section
+# ---------------------------------------------------
+st.subheader("Tools")
 
-    # ---------------------------------------------------
-    # Summary + Search inside video
-    # ---------------------------------------------------
-    st.subheader("Tools")
+# Initialize session state for summaries
+if "overview" not in st.session_state:
+    st.session_state["overview"] = None
 
-    col_summary, col_search = st.columns([0.3, 0.7])
+if "topic_summary" not in st.session_state:
+    st.session_state["topic_summary"] = None
 
-    # ---------------- SUMMARY ----------------
-    with col_summary:
-        if st.button("📘 Generate Summary"):
-            with st.spinner("Generating summary..."):
-                resp = requests.get(
-                    f"{API}/summary/{st.session_state['video_name']}"
+col_left, col_right = st.columns([0.5, 0.5])
+
+# ---------------- OVERVIEW ----------------
+with col_left:
+    st.markdown("### 📘 Overview")
+
+    if st.button("Generate Overview"):
+        with st.spinner("Generating overview..."):
+            resp = requests.get(
+                f"{API}/overview/{st.session_state['video_name']}"
+            ).json()
+
+        st.session_state["overview"] = resp.get("overview", "No overview available.")
+
+    # Display Overview
+    if st.session_state["overview"]:
+        st.markdown("**Overview:**")
+        st.write(st.session_state["overview"])
+        
+        # Download Overview
+        st.download_button(
+            label="⬇️ Download Overview",
+            data=st.session_state["overview"],
+            file_name=f"{st.session_state['video_name']}_overview.txt",
+            mime="text/plain"
+        )
+
+    st.markdown("---")
+
+    # ---------------- TOPIC-WISE SUMMARY ----------------
+    st.markdown("### 🧩 Topic-Wise Summary")
+
+    if st.button("Generate Topic-Wise Summary"):
+        with st.spinner("Generating topic‑wise summary..."):
+            resp = requests.get(
+                f"{API}/summary_topics/{st.session_state['video_name']}"
+            ).json()
+
+        st.session_state["topic_summary"] = resp.get("summary", "No topic‑wise summary available.")
+
+    # Display Topic Summary
+    if st.session_state["topic_summary"]:
+        st.markdown("**Topic-Wise Summary:**")
+        st.write(st.session_state["topic_summary"])
+
+        # Download Topic Summary
+        st.download_button(
+            label="⬇️ Download Topic-Wise Summary",
+            data=st.session_state["topic_summary"],
+            file_name=f"{st.session_state['video_name']}_topic_summary.txt",
+            mime="text/plain"
+        )
+
+
+# ---------------- SEARCH ----------------
+with col_right:
+    st.markdown("### 🔍 Search inside video")
+    query = st.text_input("Type a topic to search")
+
+    if st.button("Search"):
+        if query.strip():
+            with st.spinner("Searching..."):
+                resp = requests.post(
+                    f"{API}/search",
+                    json={
+                        "video_name": st.session_state["video_name"],
+                        "query": query
+                    }
                 ).json()
-            st.markdown("**Summary:**")
-            st.write(resp.get("summary", "No summary available."))
 
-    # ---------------- SEARCH ----------------
-    with col_search:
-        st.markdown("### Search inside video")
-        query = st.text_input("Type a topic to search")
+            st.session_state["search_results"] = resp.get("results", [])
+        else:
+            st.warning("Please enter a search query.")
 
-        # SEARCH BUTTON
-        if st.button("🔍 Search"):
-            if query.strip():
-                with st.spinner("Searching..."):
-                    resp = requests.post(
-                        f"{API}/search",
-                        json={
-                            "video_name": st.session_state["video_name"],
-                            "query": query
-                        }
-                    ).json()
+    # Show results
+    if "search_results" in st.session_state:
+        results = st.session_state["search_results"]
+        video_name = st.session_state["video_name"]
 
-                st.session_state["search_results"] = resp.get("results", [])
-            else:
-                st.warning("Please enter a search query.")
+        if results:
+            st.markdown(f"### Results for **{video_name}** (click to jump)")
 
-        # SHOW RESULTS IF THEY EXIST
-        if "search_results" in st.session_state:
-            results = st.session_state["search_results"]
-            video_name = st.session_state["video_name"]
+            for i, r in enumerate(results):
+                text = r["text"]
+                start_time = r["start"]
+                ts = format_timestamp(start_time)
 
-            if results:
-                st.markdown(f"### Results for **{video_name}** (click to jump)")
+                label = f"{text}\n🕒 **{ts}**"
 
-                for i, r in enumerate(results):
-                    text = r["text"]
-                    start_time = r["start"]
-                    ts = format_timestamp(start_time)
+                if st.button(label, key=f"result_{i}"):
+                    st.session_state["jump_to"] = start_time
+        else:
+            st.info("No matching segment found.")
 
-                    label = f"{text}\n🕒 **{ts}**"
+    # Perform jump
+    if "jump_to" in st.session_state:
+        jump_time = st.session_state["jump_to"]
 
-                    if st.button(label, key=f"result_{i}"):
-                        st.session_state["jump_to"] = start_time
-            else:
-                st.info("No matching segment found.")
-
-
-        # PERFORM JUMP AFTER VIDEO IS RENDERED
-        if "jump_to" in st.session_state:
-            jump_time = st.session_state["jump_to"]
-
-            st.markdown(
-                f"""
-                <script>
-                const video = document.querySelector('video');
-                if (video) {{
-                    video.currentTime = {jump_time};
-                    video.play();
-                }}
-                </script>
-                """,
-                unsafe_allow_html=True
-            )
+        st.markdown(
+            f"""
+            <script>
+            const video = document.querySelector('video');
+            if (video) {{
+                video.currentTime = {jump_time};
+                video.play();
+            }}
+            </script>
+            """,
+            unsafe_allow_html=True
+        )
