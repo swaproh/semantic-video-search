@@ -6,7 +6,6 @@ API = "http://localhost:8000"
 
 st.set_page_config(layout="wide")
 st.title("Semantic Video Search")
-
 # ---------------------------------------------------
 # Load existing videos
 # ---------------------------------------------------
@@ -73,6 +72,8 @@ elif selected_video:
 
     st.success(f"Loaded existing video: {video_name}")
 
+jump_time = st.session_state.get("jump_to", 0)
+
 # ---------------------------------------------------
 # Video player
 # ---------------------------------------------------
@@ -91,26 +92,28 @@ if "video_path" in st.session_state:
         st.rerun()
 
     # Native Streamlit video player
-    st.video(st.session_state["video_path"])
+    #st.video(st.session_state["video_path"])
 
-    # Attach subtitles via JS so CC works
-    st.markdown(
-        f"""
-        <script>
-        const video = document.querySelector('video');
-        if (video) {{
-            const track = document.createElement('track');
-            track.kind = 'subtitles';
-            track.label = 'English';
-            track.srclang = 'en';
-            track.src = '{st.session_state["vtt_path"]}';
-            track.default = true;
-            video.appendChild(track);
-        }}
-        </script>
-        """,
-        unsafe_allow_html=True
-    )
+    
+    start_time = jump_time   # seconds
+    st.write(f"Starting video at {start_time}s ...")
+    html_code = f"""
+    <video id="myvideo" width="600" controls>
+        <source src="{st.session_state["video_path"]}" type="video/mp4">
+    </video>
+
+    <script>
+        const vid = document.getElementById('myvideo');
+        vid.onloadeddata = function() {{
+            vid.currentTime = {start_time};
+            vid.play();
+        }};
+    </script>
+    """
+
+    st.components.v1.html(html_code, height=400)
+
+
 
     def format_timestamp(seconds: float):
         seconds = int(seconds)
@@ -232,15 +235,3 @@ with col_right:
     if "jump_to" in st.session_state:
         jump_time = st.session_state["jump_to"]
 
-        st.markdown(
-            f"""
-            <script>
-            const video = document.querySelector('video');
-            if (video) {{
-                video.currentTime = {jump_time};
-                video.play();
-            }}
-            </script>
-            """,
-            unsafe_allow_html=True
-        )
