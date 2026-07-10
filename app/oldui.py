@@ -37,8 +37,6 @@ with col_left_select:
 # ---------------------------------------------------
 # Handle upload or selection
 # ---------------------------------------------------
-
-
 if uploaded_file:
     video_name = os.path.splitext(uploaded_file.name)[0]
     st.session_state["video_name"] = video_name
