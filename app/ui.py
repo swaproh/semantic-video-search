@@ -37,38 +37,43 @@ with col_left_select:
 # ---------------------------------------------------
 # Handle upload or selection
 # ---------------------------------------------------
-
+if "processed_videos" not in st.session_state:
+    st.session_state["processed_videos"] = set()
 
 if uploaded_file:
     video_name = os.path.splitext(uploaded_file.name)[0]
     st.session_state["video_name"] = video_name
 
-    save_path = f"data/raw_video/{uploaded_file.name}"
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    with open(save_path, "wb") as f:
-        f.write(uploaded_file.read())
+    # Prevent re-processing
+    if video_name not in st.session_state["processed_videos"]:
 
-    st.success(f"Video uploaded: {uploaded_file.name}")
+        save_path = f"data/raw_video/{uploaded_file.name}"
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        with open(save_path, "wb") as f:
+            f.write(uploaded_file.read())
 
-    with st.spinner("Transcribing video..."):
-        resp = requests.post(f"{API}/transcribe", params={"video_path": save_path})
-        transcript_path = resp.json()["transcript_path"]
+        st.success(f"Video uploaded: {uploaded_file.name}")
 
-    with st.spinner("Building search index..."):
-        requests.post(f"{API}/build", params={"transcript_path": transcript_path})
+        with st.spinner("Transcribing video..."):
+            resp = requests.post(f"{API}/transcribe", params={"video_path": save_path})
+            transcript_path = resp.json()["transcript_path"]
 
-    with st.spinner("Generating subtitles..."):
-        requests.post(f"{API}/generate_cc", params={"video_name": video_name})
+        with st.spinner("Building search index..."):
+            requests.post(f"{API}/build", params={"transcript_path": transcript_path})
 
+
+        # Mark video as processed
+        st.session_state["processed_videos"].add(video_name)
+
+    # Set paths (always)
     st.session_state["video_path"] = f"http://localhost:8000/video/{video_name}.mp4"
-    st.session_state["vtt_path"] = f"http://localhost:8000/subtitles/{video_name}.vtt"
+
 
 elif selected_video:
     video_name = selected_video
     st.session_state["video_name"] = video_name
 
     st.session_state["video_path"] = f"http://localhost:8000/video/{video_name}.mp4"
-    st.session_state["vtt_path"] = f"http://localhost:8000/subtitles/{video_name}.vtt"
 
     st.success(f"Loaded existing video: {video_name}")
 
@@ -150,7 +155,6 @@ if "video_path" in st.session_state:
         html_code = f"""
         <video id="myvideo" width="100%" controls>
             <source src="{st.session_state["video_path"]}" type="video/mp4">
-            <track src="{st.session_state["vtt_path"]}" kind="subtitles" srclang="en" label="English" default>
         </video>
 
         <script>
