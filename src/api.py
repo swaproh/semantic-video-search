@@ -236,99 +236,6 @@ def get_video(filename: str):
         return {"error": "Video not found"}
     return FileResponse(path, media_type="video/mp4")
 
-# Summary (simple text summary from transcript)
-
-client = OpenAI()
-
-@app.get("/summary/{video_name}")
-def generate_summary(video_name: str):
-    transcript_path = os.path.join(TRANSCRIPTS_DIR, f"{video_name}.json")
-
-    if not os.path.exists(transcript_path):
-        return {"summary": "Transcript not found."}
-
-    with open(transcript_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    # Extract full transcript text
-    if "chunks" in data:
-        full_text = " ".join([c["text"] for c in data["chunks"]])
-    elif "segments" in data:
-        full_text = " ".join([s["text"] for s in data["segments"]])
-    else:
-        full_text = data.get("text", "")
-
-    # LLM summary
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "Summarize the transcript clearly and concisely."},
-            {"role": "user", "content": full_text}
-        ]
-    )
-
-    summary_text = response.choices[0].message.content
-    return {"summary": summary_text}
-
-
-
-# Generate subtitles (VTT) from transcript
-@app.post("/generate_cc")
-def generate_cc(video_name: str):
-    transcript_path = os.path.join(TRANSCRIPTS_DIR, f"{video_name}.json")
-    vtt_path = os.path.join("data/subtitles", f"{video_name}.vtt")
-
-    if not os.path.exists(transcript_path):
-        return {"error": "Transcript not found"}
-
-    with open(transcript_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    # Support Whisper format
-    if "segments" in data:
-        segments = data["segments"]
-    # Support chunk format
-    elif "chunks" in data:
-        segments = data["chunks"]
-    else:
-        return {"error": "Transcript format not supported"}
-
-    def to_vtt_time(sec):
-        h = int(sec // 3600)
-        m = int((sec % 3600) // 60)
-        s = sec % 60
-        return f"{h:02}:{m:02}:{s:06.3f}"
-
-    with open(vtt_path, "w", encoding="utf-8") as vtt:
-        vtt.write("WEBVTT\n\n")
-        for seg in segments:
-            start = to_vtt_time(seg["start"])
-            end = to_vtt_time(seg["end"])
-            text = seg["text"].strip()
-            vtt.write(f"{start} --> {end}\n{text}\n\n")
-
-    return {"vtt_path": vtt_path}
-
-# Serve subtitles (VTT) with CORS
-@app.get("/subtitles/{filename}")
-def get_subtitles(filename: str):
-    path = os.path.join("data/subtitles", filename)
-
-    if not os.path.exists(path):
-        return {"error": "Subtitle not found"}
-
-    with open(path, "r", encoding="utf-8") as f:
-        content = f.read()
-
-    return Response(
-        content,
-        media_type="text/vtt",
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Methods": "*",
-        }
-    )
 
 # Delete video + all related artifacts
 @app.delete("/delete_video")
@@ -408,7 +315,8 @@ def search_all(payload: dict):
 
     return {"results": all_results}
 
-
+#Overview and Summary 
+client = OpenAI()
 
 @app.get("/summary_topics/{video_name}")
 def generate_topic_summary(video_name: str):
