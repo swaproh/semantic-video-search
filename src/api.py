@@ -236,8 +236,7 @@ def get_video(filename: str):
         return {"error": "Video not found"}
     return FileResponse(path, media_type="video/mp4")
 
-
-# Delete video + all related artifacts
+#Delete video + all related files
 @app.delete("/delete_video")
 def delete_video(video_name: str):
     registry = load_registry()
@@ -245,20 +244,22 @@ def delete_video(video_name: str):
     if video_name not in registry:
         return {"error": "Video not found"}
 
-    # Delete video file
-    video_path = registry[video_name]["video_path"]
+    entry = registry[video_name]
+
+    # Delete raw video
+    video_path = entry.get("video_path")
     if video_path and os.path.exists(video_path):
         os.remove(video_path)
 
-    # Delete chunks
-    chunks_path = registry[video_name]["chunks"]
-    if chunks_path and os.path.exists(chunks_path):
-        os.remove(chunks_path)
-
     # Delete FAISS index
-    faiss_path = registry[video_name]["faiss"]
+    faiss_path = entry.get("faiss")
     if faiss_path and os.path.exists(faiss_path):
         os.remove(faiss_path)
+
+    # Delete metadata JSON
+    meta_path = entry.get("meta")
+    if meta_path and os.path.exists(meta_path):
+        os.remove(meta_path)
 
     # Delete transcript
     transcript_path = os.path.join(TRANSCRIPTS_DIR, f"{video_name}.json")
@@ -275,6 +276,7 @@ def delete_video(video_name: str):
     save_registry(registry)
 
     return {"message": "Video deleted"}
+
 
 
 @app.post("/search_all")

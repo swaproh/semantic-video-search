@@ -139,15 +139,8 @@ if "video_path" in st.session_state:
     with col_video:
         st.subheader("Video Player")
 
-        if st.button("🗑️ Delete Video"):
-            with st.spinner("Deleting video..."):
-                requests.delete(
-                    f"{API}/delete_video",
-                    params={"video_name": st.session_state["video_name"]}
-                )
-            st.success("Video deleted.")
-            st.session_state.clear()
-            st.rerun()
+
+
 
         start_time = st.session_state.get("jump_to", 0)
         st.write(f"Starting video at {start_time}s ...")
