@@ -216,3 +216,48 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environment
+ml_labs/
+venv/
+.env/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Whisper + FAISS + Embeddings outputs
+data/raw_video/
+data/transcripts/
+data/faiss_index/
+data/embeddings/
+data/chunks/
+data/subtitles/
+faiss_index/
+models/faiss_index/
+registry.json
+
+
+# Model weight files
+*.bin
+*.pt
+*.safetensors
+
+# Logs
+logs/
+runs/
+
+# Temporary files
+*.pkl
+*.pickle
+*.tmp
+
+# Streamlit cache
+.streamlit/
+
+# FastAPI uploads
+uploads/
+

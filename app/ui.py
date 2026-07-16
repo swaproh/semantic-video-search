@@ -3,9 +3,92 @@ import requests
 import os
 
 API = "http://localhost:8000"
+import streamlit as st
+
+# Background image CSS
+page_bg_img = """
+<style>
+[data-testid="stAppViewContainer"] {
+    background-image: url("https://images.unsplash.com/photo-1631090129610-6539a791b28d");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+[data-testid="stHeader"] {
+    background: rgba(0,0,0,0);
+}
+
+[data-testid="stToolbar"] {
+    right: 2rem;
+}
+</style>
+"""
+
+st.markdown(page_bg_img, unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+
+div[data-testid="stFileUploader"] * {
+    color: #000 !important;     /* black text */
+}
+
+div[data-testid="stSelectbox"] * {
+    color: #000 !important;     /* black text */
+}
+
+/* Dropdown menu text */
+div[data-testid="stSelectbox"] div[role="listbox"] * {
+    color: #000 !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+
+/* File uploader text */
+div[data-testid="stFileUploader"] * {
+    color: #000 !important;
+}
+
+/* Selectbox text */
+div[data-testid="stSelectbox"] * {
+    color: #000 !important;
+}
+
+/* Dropdown menu text */
+div[data-testid="stSelectbox"] div[role="listbox"] * {
+    color: #000 !important;
+}
+
+/* Text input fields */
+input[type="text"], input[type="number"], textarea {
+    color: #000 !important;
+}
+
+/* Labels (Upload, Choose from existing videos, etc.) */
+label, p, span {
+    color: #000 !important;
+}
+
+/* Buttons */
+button[kind="primary"] * {
+    color: #000 !important;
+}
+
+button[kind="secondary"] * {
+    color: #000 !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
 
 st.set_page_config(layout="wide")
-st.title("Semantic Video Search")
+st.title("🎥Semantic Video Search")
 
 # ---------------------------------------------------
 # Load existing videos
@@ -24,7 +107,7 @@ col_right_upload, col_left_select = st.columns([0.5, 0.5])
 
 with col_right_upload:
     uploaded_file = st.file_uploader(
-        "Upload / Drag a video",
+        "Upload",
         type=["mp4", "mov", "mkv", "mpeg4"]
     )
 
@@ -67,6 +150,7 @@ if uploaded_file:
 
     # Set paths (always)
     st.session_state["video_path"] = f"http://localhost:8000/video/{video_name}.mp4"
+   
 
 
 elif selected_video:
