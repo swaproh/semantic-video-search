@@ -230,6 +230,7 @@ venv/
 .ipynb_checkpoints/
 
 # Whisper + FAISS + Embeddings outputs
+data/
 data/raw_video/
 data/transcripts/
 data/faiss_index/
